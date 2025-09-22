@@ -1,9 +1,11 @@
 %include "linux64.inc"
 
 section .data
-	config_path db "config.ini",0	
+	config_path db "config.ini",0
+	inventario_path db "inventario.txt",0	
 	hello db "Hello World!!", 0xa
 	hello_len equ $ - hello
+	reset_color db 0x1b, "[0m"
 
 section .bss
         text resb 64
@@ -12,6 +14,9 @@ section .bss
 	color_barra resb 3
 	color_fondo resb 3
 	format resb 8
+	inventario resb 512
+	bytes_inventario resq 1
+	inventario_pointers resb 64
 
 section .text
         global _start
@@ -173,6 +178,56 @@ print_hello:
 	print format
 	print hello
 
+lectura_invnentario:
+	; Open the file
+        mov rax, SYS_OPEN
+        mov rdi, inventario_path
+        mov rsi, O_RDONLY
+        mov rdx, 0
+        syscall
+	
+        ; Read from the file
+        push rax
+        mov  rdi, rax
+        mov  rax, SYS_READ
+        mov  rsi, inventario
+        mov  rdx, 512
+        syscall
+ 
+        mov [bytes_inventario], rax
+ 
+        ; Close the file
+        mov rax, SYS_CLOSE
+        pop rdi
+        syscall
+
+llenar_inventario_pointers:
+	mov r8, 1
+	mov r9, inventario
+	mov [inventario_pointers], r9
+	mov r10, 0
+	jmp buscar_inventario
+	
+guardar_primer_caracter:
+	inc r8
+	inc r9
+	add r10, 4
+	mov [inventario_pointers+r10], r9
+
+buscar_inventario:
+	inc r8
+	inc r9
+	cmp r8, [bytes_inventario]
+	je bubble_sort
+	mov bl, [r9]
+	cmp bl, 10
+	je guardar_primer_caracter
+	jmp buscar_inventario 
+
+bubble_sort:
+	print inventario_pointers
+
 exit_script:
+	print reset_color
 	exit
 
