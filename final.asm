@@ -17,6 +17,7 @@ section .bss
 	inventario resb 512
 	bytes_inventario resq 1
 	inventario_pointers resb 64
+	msg resb 512
 
 section .text
         global _start
@@ -225,8 +226,59 @@ buscar_inventario:
 	jmp buscar_inventario 
 
 bubble_sort:
-	print inventario_pointers
+	mov r8, 4	; i index
+	mov r9, 0	; j index ambos para recorrer la lista de punteros
+	mov r10, 4	; j + 1 va de 4 en 4 ya que se accesan punteros
 
+bubble_compare:
+	mov r11d, [inventario_pointers+r9]	; puntero en j
+	mov r12d, [inventario_pointers+r10]	; puntero en j + 1
+	cmp r12d, 0				; final de la lista de punteros
+	je bubble_i
+	mov al, [r11d]
+	mov bl, [r12d]
+	cmp al, bl
+	jg bubble_swap
+	jmp bubble_j
+
+bubble_swap:
+	mov [inventario_pointers+r9], r12d
+	mov [inventario_pointers+r10], r11d
+
+bubble_j:
+	add r9, 4
+	add r10, 4
+	jmp bubble_compare
+
+bubble_i:
+	add r8, 4
+	mov r9, 0
+	mov r10, 4
+	mov r12d, [inventario_pointers+r8]
+	cmp r12d, 0
+	je end_bubble
+	jmp bubble_compare
+
+end_bubble:
+	mov r8d, [inventario_pointers+r9]
+	cmp r8d, 0
+	je exit_script
+	mov rsi, r8
+	mov rdi, msg
+	call copiar_string
+	print msg
+	add r9, 4
+	jmp end_bubble
+
+copiar_string:
+	mov al, [rsi]
+	mov [rdi], al
+	inc rsi
+	inc rdi
+	cmp al, 0
+	jnz copiar_string
+	ret
+ 
 exit_script:
 	print reset_color
 	exit
