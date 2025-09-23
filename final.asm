@@ -3,8 +3,6 @@
 section .data
 	config_path db "config.ini",0
 	inventario_path db "inventario.txt",0	
-	hello db "Hello World!!", 0xa
-	hello_len equ $ - hello
 	reset_color db 0x1b, "[0m"
 
 section .bss
@@ -39,21 +37,18 @@ _start:
         mov  rdx, 64
         syscall
 	
-	mov [bytes_read], rax
+	mov [bytes_read], rax	; Guardar la cantidad de bytes leídos
  
         ; Close the file
         mov rax, SYS_CLOSE
         pop rdi
         syscall
 	
-	;print text
-	;exit
-	
 obtener_config:
 	mov r8, 0
 	mov r9, text
 
-buscar_caracter_barra:
+buscar_caracter_barra:		; Busca el primer : para guardar el caracter_barra
 	mov cl, [r9]
 	cmp cl, 58
 	je guardar_caracter_barra
@@ -85,7 +80,7 @@ cmp_caracter_barra:
 	mov [caracter_barra], rax
 	;print caracter_barra
 
-buscar_color_barra:
+buscar_color_barra:		; Busca el segundo : para guardar el color barra
 	mov cl, [r9]
 	cmp cl, 58
 	je guardar_color_barra
@@ -115,7 +110,7 @@ cmp_color_barra:
 	mov [color_barra], rax
 	;print color_barra
 
-buscar_color_fondo:
+buscar_color_fondo:		; Busca el tercer : para guardar el color fondo
 	mov cl, [r9]
 	cmp cl, 58
 	je guardar_color_fondo
@@ -146,7 +141,7 @@ cmp_color_fondo:
 	;print color_fondo
 	jmp cargar_formato
 
-mascara:
+mascara:			; La mascara se utiliza para cuando hay números de varios digitos, guardarlos todos
 	push rbp
 	mov rbp, rsp
 	mov r12, [rbp+16]
@@ -164,7 +159,7 @@ end_mascara:
 	pop rbp
 	ret
 
-cargar_formato:
+cargar_formato:			; Guarda el formato obtenido en el espacio reservado
 	mov bl, 27
 	mov [format], bl
 	mov bl, 91
@@ -201,7 +196,7 @@ lectura_inventario:
         pop rdi
         syscall
 
-llenar_inventario_pointers:
+llenar_inventario_pointers:		; Para el manejo de las diferentes entradas en el inventario se utilizará una lista con los punteros al primer caracter de cada elemento
 	mov r8, 1
 	mov r9, inventario
 	mov [inventario_pointers], r9
@@ -224,7 +219,7 @@ buscar_inventario:
 	je guardar_primer_caracter
 	jmp buscar_inventario 
 
-bubble_sort:
+bubble_sort:				; El algoritmo de ordenamiento a usar será el bubble sort
 	mov r8, 4	; i index
 	mov r9, 0	; j index ambos para recorrer la lista de punteros
 	mov r10, 4	; j + 1 va de 4 en 4 ya que se accesan punteros
@@ -259,7 +254,7 @@ bubble_i:
 	je imprimir_inventario
 	jmp bubble_compare
 
-imprimir_inventario:	
+imprimir_inventario:				; Una vez ordenado el inventario se imprime con el formato deseado
 	; Imprimir nombre del inventario
 	mov r8d, [inventario_pointers+r15]
 	cmp r8d, 0
@@ -290,7 +285,7 @@ imprimir_inventario:
 	add r15, 4
 	jmp imprimir_inventario
 
-copiar_nombre:
+copiar_nombre: 		; Función para llenar el string de nombre
 	mov al, [rsi]
 	mov [rdi], al
 	inc rsi
@@ -299,7 +294,7 @@ copiar_nombre:
 	jnz copiar_nombre
 	ret
 
-limpiar_msg:
+limpiar_msg:		; Función para limpiar el string de nombre
 	mov al, [msg+r10]
 	cmp al, 0
 	je terminar_limpieza
@@ -311,7 +306,7 @@ limpiar_msg:
 terminar_limpieza:
 	ret
 
-cargar_barra:
+cargar_barra:		; Función para cargar la cantidad de caracteres barra que se deben imprimir
 	mov al, [rsi]
 	inc rsi
 	cmp al, 58
@@ -337,7 +332,7 @@ imprimir_barra:
 	mov al, r13b
 	sub al, 48
 
-imprimir_caracter:
+imprimir_caracter:		; Función para imprimir la cantidad de caracteres deseados
 	print caracter_barra
 	sub al, 1
 	cmp al, 0
@@ -350,26 +345,6 @@ imprimir_caracter:
 regreso_caracter:
 	ret
 
-end_bubble:
-	mov r8d, [inventario_pointers+r9]
-	cmp r8d, 0
-	je exit_script
-	mov rsi, r8
-	mov rdi, msg
-	call copiar_string
-	print msg
-	add r9, 4
-	jmp end_bubble
-
-copiar_string:
-	mov al, [rsi]
-	mov [rdi], al
-	inc rsi
-	inc rdi
-	cmp al, 0
-	jnz copiar_string
-	ret
- 
 exit_script:
 	print reset_color
 	exit
